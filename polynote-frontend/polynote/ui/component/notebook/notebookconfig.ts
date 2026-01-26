@@ -140,6 +140,21 @@ class Dependencies extends Disposable {
     readonly el: TagElement<"div">;
     private container: TagElement<"div">;
 
+    private isHttpUrl(dep: string): boolean {
+        try {
+            const url = new URL(dep);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
+
+    private shouldSupportCaching(lang: string, dep: string): boolean {
+        const isPython = lang === 'python';
+        const isHttp = this.isHttpUrl(dep);
+        return isPython || isHttp;
+    }
+
     constructor(dependenciesHandler: StateView<Record<string, string[]> | undefined>, stateHandler: StateHandler<NBConfig>) {
         super()
 
@@ -185,15 +200,27 @@ class Dependencies extends Disposable {
     private addDep(item?: DepRow["data"]) {
         const data = item ?? {lang: this.defaultLang, dep: "", cache: true}
 
+        const updateAdvancedVisibility = () => {
+            const shouldShowCache = this.shouldSupportCaching(data.lang, data.dep);
+
+            if (shouldShowCache) {
+                detail.style.display = '';
+            } else {
+                detail.style.display = 'none';
+                row.classList.remove("show-advanced");
+            }
+        };
+
         const type = dropdown(['dependency-type'], {scala: 'scala/jvm', python: 'pip'}, data.lang).change(evt => {
             row.classList.remove(data.lang);
             data.lang = type.options[type.selectedIndex].value;
             row.classList.add(data.lang);
-
+            updateAdvancedVisibility();
         });
 
         const input = textbox(['dependency'], 'Dependency coordinate, URL, pip package', data.dep).change(evt => {
-            data.dep = input.value.trim()
+            data.dep = input.value.trim();
+            updateAdvancedVisibility();
         });
 
         const remove = iconButton(['remove'], 'Remove', 'minus-circle-red', 'Remove').click(evt => {
@@ -215,7 +242,7 @@ class Dependencies extends Disposable {
             div([], [
                 para([], [
                     "Should Polynote use a cached version of this dependency, if available?",
-                    " Applicable to URL or pip dependencies only."]),
+                    " Applicable to HTTP/HTTPS URL or pip dependencies only."]),
                 para([], ["Note that if any pip dependency bypasses the cache, the entire virtual environment will be recreated."]),
                 cache
             ])
@@ -229,16 +256,21 @@ class Dependencies extends Disposable {
             div(['dependency-row', 'notebook-config-row'], [type, input, detail, remove, add, advanced]),
             { data })
         this.container.appendChild(row)
+        updateAdvancedVisibility();
     }
 
     get conf(): Record<string, string[]> {
         return Array.from(this.container.children).reduce<Record<string, string[]>>((acc, row: DepRow) => {
             if (row.data.dep) {
                 if (row.data.cache) {
+                    // Remove ?nocache if present
                     row.data.dep = row.data.dep.endsWith("?nocache") ? row.data.dep.substr(0, row.data.dep.length - "?nocache".length) : row.data.dep;
-                } else {
+                } else if (this.shouldSupportCaching(row.data.lang, row.data.dep)) {
+                    // Only add ?nocache for HTTP/HTTPS URLs or pip dependencies
                     row.data.dep = row.data.dep.endsWith("?nocache") ? row.data.dep : row.data.dep + "?nocache";
                 }
+                // For other URL types (s3, file, etc.), ignore cache setting and don't add ?nocache
+
                 acc[row.data.lang] = [...(acc[row.data.lang] || []), row.data.dep]
             }
             return acc
