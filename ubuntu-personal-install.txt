@@ -6,7 +6,9 @@ JDK : openjdk version "17.0.18" 2026-01-20
  --- installed using apt install 
 Scala code runner version 2.12.18 -- Copyright 2002-2023, LAMP/EPFL and Lightbend, Inc.
 
+Python 3.12.4
 
+--this found to be working both on mac and linux : ubuntu
 
 --- using python setup to install using requirements.txt for polynote
 source .venv/bin/activate
