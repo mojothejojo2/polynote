@@ -1,0 +1,29 @@
+Polynote version : 0.7.2
+Pay attention to requirements.txt used for acutal installation
+
+spark : spark-3.5.3-bin-hadoop3.tgz
+JDK : openjdk version "17.0.18" 2026-01-20
+ --- installed using apt install 
+Scala code runner version 2.12.18 -- Copyright 2002-2023, LAMP/EPFL and Lightbend, Inc.
+
+
+
+--- using python setup to install using requirements.txt for polynote
+source .venv/bin/activate
+pip3 install -r requirements.txt
+pip install --upgrade pip
+deactivate
+
+-- installing jdk and scala
+sudo apt install openjdk-17-jdk
+sudo apt install openjdk-11-jdk
+sudo update-alternatives --config java
+java -version
+echo $JAVA_HOME
+
+--setup javahome - scalahome and sparkhome
+nvim global.sh
+ 
+
+wget https://downloads.lightbend.com/scala/2.12.18/scala-2.12.18.tgz
+-- templates stored at global.sh for enabling
